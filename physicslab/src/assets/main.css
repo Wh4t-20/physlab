@@ -1,0 +1,188 @@
+body{
+    background-color: #FBFBFB    ;
+}
+.parentbox {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    margin-top: 100px;
+    padding: 0 10vw;
+    gap: 20px;
+}
+
+/*Map Items CSS*/
+.mapbox {
+    height: 75vh;
+    width: 50vw;
+    background-color: #F5F5F5;
+    border-radius: 20px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+    box-shadow: 0px 8px 5px #4A4A4A;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    z-index: 2;
+}
+
+#map-search {
+    color: black;
+    background-color: #f0f0f0;
+    position: absolute;
+    z-index: 4;
+    bottom: 3px; /* NEW POSITIONING */
+    left: 200px; /* NEW POSITIONING */
+    width: 300px; /* NEW WIDTH */
+    padding: 10px; /* Keep padding for height */
+    border: 1px solid #ccc; /* Border for input */
+    box-sizing: border-box;
+    border-radius: 30px; /* Rounded corners */
+
+}
+
+
+#map-form button {
+    background-color: #0e0f3b;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 30px;
+    cursor: pointer;
+    z-index: 2;
+    position: absolute;
+    bottom: 3px;
+    left: 468px;
+    width: 40px;
+    font-size: 16px;
+}
+
+/*Chatbox Items CSS*/
+.chatbox {
+    height: 75vh;
+    width: 27vw;
+    background-color: #EEEEEE;
+    border-radius: 20px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+    box-shadow: 0px 8px 5px #4A4A4A;
+}
+
+/* Suggestions Container */
+.suggestions-container { 
+    position: absolute;
+    bottom: 45px; /* Adjusted to be above the new search bar position */
+    left: 200px; /* Aligned with the new search bar position */
+    width: 300px; /* Matches the new search bar width */
+    z-index: 3; /* Above the search input */
+    background-color: white;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    border-bottom: none;
+    padding: 0;
+    margin: 0;
+    border-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    overflow: hidden;
+    box-sizing: border-box; 
+}
+
+.suggestion-item {
+    padding: 10px;
+    cursor: pointer;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+.suggestion-item:first-child {
+    border-top: none; 
+}
+
+.suggestion-item:hover {
+    background-color: #f5f5f5;
+}
+
+/* No Results Message */
+.no-results-message {
+    position: absolute;
+    bottom: 45px; /* Adjusted to be above the new search bar position */
+    left: 200px; /* Aligned with the new search bar position */
+    width: 300px; /* Matches the new search bar width */
+    z-index: 11;
+    padding: 10px;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 5px;
+    color: #856404; 
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+input, button {
+    margin-bottom: 10px; 
+}
+
+input {
+    flex-grow: 1;
+    margin-right: 0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 30px;
+}
+ 
+button {
+    background-color: #0e0f3b;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 30px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #07407b;
+}
+
+/* Media Queries */
+@media screen and (max-width: 1200px) {
+    .parentbox {
+        flex-direction: column;
+        align-items: center;
+        padding: 0;
+    }
+    .mapbox {
+        width: 80vw;
+        margin-bottom: 2%;
+    }
+
+    .chatbox {
+        width: 80vw;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .mapbox,
+    .chatbox {
+        width: 90vw;
+        margin: 10px 0;
+    }
+    .parentbox {
+        margin-top: 120px;
+    }
+}
+
+/* Deep selector styles for Mapbox attribution control (from previous versions) */
+:deep(.mapboxgl-ctrl-attrib-button) {
+    display: none !important;
+}
+:deep(.mapboxgl-ctrl-attrib) {
+    display: none !important;
+}
