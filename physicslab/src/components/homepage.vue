@@ -74,7 +74,9 @@
           <h4>Segment Angles</h4>
           <ul style="text-align:left;">
             <li v-for="(angle, idx) in vectorAngles" :key="idx">
-              <strong>Segment {{ idx + 1 }} Angle:</strong> {{ angle.toFixed(2) }}°
+              <strong>Segment {{ idx + 1 }} Angle:</strong>
+              {{ angle.toFixed(2) }}°
+              ({{ angleToDirection(angle) }})
             </li>
           </ul>
         </div>
@@ -102,21 +104,6 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
-}
-
-// Add this inside your <script> block, outside export default
-function angleToDirection(angle) {
-  // Normalize angle to 0-360
-  const deg = (angle + 360) % 360;
-  if (deg >= 337.5 || deg < 22.5) return 'East';
-  if (deg >= 22.5 && deg < 67.5) return 'Northeast';
-  if (deg >= 67.5 && deg < 112.5) return 'North';
-  if (deg >= 112.5 && deg < 157.5) return 'Northwest';
-  if (deg >= 157.5 && deg < 202.5) return 'West';
-  if (deg >= 202.5 && deg < 247.5) return 'Southwest';
-  if (deg >= 247.5 && deg < 292.5) return 'South';
-  if (deg >= 292.5 && deg < 337.5) return 'Southeast';
-  return '';
 }
 
 export default {
