@@ -57,7 +57,6 @@
       </div>
     </div>
 
-    <!-- Modal for result (move here, outside chatbox/sidebar) -->
     <div v-if="showSpeedModal" class="modal-overlay">
       <div class="modal-content">
         <h3>Required Speed</h3>
@@ -119,12 +118,10 @@ export default {
       maxMarkers: 5,
       lineLayerId: 'route-line',
 
-      // New data properties for arrival time feature
       arrivalMinutes: 0,
       requiredSpeed: 0,
       showSpeedModal: false,
 
-      // Added properties for vector and angle calculations
       resultantVector: 0,
       vectorAngles: [],
     };
@@ -189,9 +186,9 @@ export default {
           'line-cap': 'round',
         },
         paint: {
-          'line-color': '#00ff00', // green
+          'line-color': '#00ff00', 
           'line-width': 4,
-          'line-dasharray': [2, 2], // dashed line
+          'line-dasharray': [2, 2], 
         },
       });
     });
@@ -221,10 +218,9 @@ export default {
     },
     updateMapLineAndKinematics() {
             this.totalDistance = 0;
-            const lineCoordinates = []; // This array will hold the [lng, lat] pairs for the line
+            const lineCoordinates = [];
 
             if (this.selectedLocations.length >= 2) {
-                // Calculate total distance (as before)
                 for (let i = 0; i < this.selectedLocations.length - 1; i++) {
                     const p1 = this.selectedLocations[i].coordinates;
                     const p2 = this.selectedLocations[i + 1].coordinates;
@@ -376,11 +372,11 @@ export default {
     const a = this.selectedLocations[i].coordinates;
     const b = this.selectedLocations[i + 1].coordinates;
 
-    // Calculate distance (haversine)
+    // Calculate distance 
     const dist = haversineDistance(a.lat, a.lng, b.lat, b.lng);
     this.totalDistance += dist;
 
-    // Calculate vector components (approximate, assuming small distances)
+    // Calculate vector components 
     const dx = (b.lng - a.lng) * Math.cos(((a.lat + b.lat) / 2) * Math.PI / 180) * 111.32; // km per degree longitude
     const dy = (b.lat - a.lat) * 110.574; // km per degree latitude
 
