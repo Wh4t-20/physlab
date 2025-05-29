@@ -38,6 +38,10 @@
       </div>
     </div>
   </div>
+  <div class="up-logo-container">
+  <img src="/src/assets/uplogo2.png" alt="UP Logo" class="up-logo-top-left" />
+</div>
+
 </template>
 
 <script>
