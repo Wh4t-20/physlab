@@ -34,14 +34,57 @@
         <p v-if="totalDistance > 0">
           <strong>Total Distance:</strong> {{ totalDistance.toFixed(2) }} km
         </p>
+        <p v-if="resultantVector > 0" style="margin-top: 12px;">
+          <strong>Resultant Displacement:</strong> {{ resultantVector.toFixed(2) }} km
+        </p>
+        <!-- Removed segment angles from here -->
         <button @click="clearAllLocations" v-if="selectedLocations.length > 0">Clear All</button>
+
+        <!-- Arrival time and speed calculation section -->
+        <div class="arrival-time-box">
+          <label for="arrival-mins"><strong>Desired Time to Arrive (minutes):</strong></label>
+          <input
+            type="text"
+            id="arrival-mins"
+            v-model="arrivalMinutes"
+            class="arrival-time-input"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            placeholder="e.g. 30"
+          />
+          <button @click="showRequiredSpeed" :disabled="!totalDistance || !arrivalMinutes">Calculate Speed</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for result (move here, outside chatbox/sidebar) -->
+    <div v-if="showSpeedModal" class="modal-overlay">
+      <div class="modal-content">
+        <h3>Required Speed</h3>
+        <p>
+          To arrive in {{ arrivalMinutes }} minutes,<br>
+          you need to travel from:<br>
+          <strong>{{ selectedLocations[0].name }}</strong><br>
+          to:<br>
+          <strong>{{ selectedLocations[selectedLocations.length - 1].name }}</strong><br>
+          at <strong>{{ requiredSpeed.toFixed(2) }} km/h</strong>.
+        </p>
+        
+        <div v-if="vectorAngles.length > 0" style="margin-top: 16px;">
+          <h4>Segment Angles</h4>
+          <ul style="text-align:left;">
+            <li v-for="(angle, idx) in vectorAngles" :key="idx">
+              <strong>Segment {{ idx + 1 }} Angle:</strong> {{ angle.toFixed(2) }}°
+            </li>
+          </ul>
+        </div>
+        <button @click="showSpeedModal = false">Close</button>
       </div>
     </div>
   </div>
   <div class="up-logo-container">
-  <img src="/src/assets/uplogo2.png" alt="UP Logo" class="up-logo-top-left" />
-</div>
-
+    <img src="/src/assets/uplogo2.png" alt="UP Logo" class="up-logo-top-left" />
+  </div>
 </template>
 
 <script>
@@ -73,16 +116,22 @@ export default {
       totalDistance: 0,
       nextLocationId: 0,
       maxMarkers: 5,
+      lineLayerId: 'route-line',
+
+      // New data properties for arrival time feature
+      arrivalMinutes: 0,
+      requiredSpeed: 0,
+      showSpeedModal: false,
+
+      // Added properties for vector and angle calculations
+      resultantVector: 0,
+      vectorAngles: [],
     };
   },
   watch: {
     location: {
       handler: 'fetchLocationSuggestions',
       immediate: false,
-    },
-    selectedLocations: {
-      handler: 'calculateTotalDistance',
-      deep: true,
     },
   },
   mounted() {
@@ -95,6 +144,56 @@ export default {
     });
 
     this.map.on('click', this.handleMapClick);
+    this.map.on('load', () => {
+      this.map.addSource(this.lineLayerId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [],
+          },
+        },
+      });
+      this.map.addLayer({
+        id: this.lineLayerId,
+        type: 'line',
+        source: this.lineLayerId,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': '#ff0000',
+          'line-width': 3,
+        },
+      });
+      // Add resultant vector source/layer
+      this.map.addSource('resultant-vector', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [],
+          },
+        },
+      });
+      this.map.addLayer({
+        id: 'resultant-vector-layer',
+        type: 'line',
+        source: 'resultant-vector',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': '#00ff00', // green
+          'line-width': 4,
+          'line-dasharray': [2, 2], // dashed line
+        },
+      });
+    });
   },
   methods: {
     async fetchLocationSuggestions() {
@@ -119,7 +218,39 @@ export default {
         }
       }, 300);
     },
+    updateMapLineAndKinematics() {
+            this.totalDistance = 0;
+            const lineCoordinates = []; // This array will hold the [lng, lat] pairs for the line
 
+            if (this.selectedLocations.length >= 2) {
+                // Calculate total distance (as before)
+                for (let i = 0; i < this.selectedLocations.length - 1; i++) {
+                    const p1 = this.selectedLocations[i].coordinates;
+                    const p2 = this.selectedLocations[i + 1].coordinates;
+                    this.totalDistance += haversineDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+                }
+                // Prepare coordinates for the line (Mapbox expects [lng, lat] pairs)
+                this.selectedLocations.forEach(loc => {
+                    lineCoordinates.push([loc.coordinates.lng, loc.coordinates.lat]);
+                });
+            } else {
+                // If less than 2 locations, ensure line is empty
+                this.totalDistance = 0;
+            }
+
+            // Update the Mapbox line source with the new coordinates
+            if (this.map.getSource('route')) {
+                this.map.getSource('route').setData({
+                    type: 'Feature',
+                    properties: {},
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: lineCoordinates // This updates the line on the map
+                    }
+                });
+            }
+        },
+        
     selectSuggestion(suggestion) {
       if (this.selectedLocations.length >= this.maxMarkers) {
         this.showMessage('Maximum of 5 locations allowed.');
@@ -140,6 +271,8 @@ export default {
 
       this.location = '';
       this.suggestions = [];
+      this.calculateTotalDistance();
+      this.drawLineBetweenMarkers();
     },
 
     handleMapClick(e) {
@@ -167,6 +300,8 @@ export default {
             coordinates: { lat, lng },
             markerInstance: marker,
           });
+          this.calculateTotalDistance();
+          this.drawLineBetweenMarkers();
         })
         .catch(err => {
           console.error(err);
@@ -178,6 +313,8 @@ export default {
       if (idx !== -1) {
         this.selectedLocations[idx].markerInstance.remove();
         this.selectedLocations.splice(idx, 1);
+        this.calculateTotalDistance();
+        this.drawLineBetweenMarkers();
       }
     },
 
@@ -185,30 +322,96 @@ export default {
       this.selectedLocations.forEach(loc => loc.markerInstance.remove());
       this.selectedLocations = [];
       this.totalDistance = 0;
+      this.drawLineBetweenMarkers();
     },
+    drawLineBetweenMarkers() {
+  if (!this.map || !this.map.getSource(this.lineLayerId)) return;
+  const coords = this.selectedLocations.map(loc => [loc.coordinates.lng, loc.coordinates.lat]);
+  this.map.getSource(this.lineLayerId).setData({
+    type: 'Feature',
+    geometry: {
+      type: 'LineString',
+      coordinates: coords,
+    },
+  });
 
+  // Draw resultant vector as a dashed line from first to last location
+  if (
+    this.selectedLocations.length >= 2 &&
+    this.map.getSource('resultant-vector')
+  ) {
+    const first = this.selectedLocations[0].coordinates;
+    const last = this.selectedLocations[this.selectedLocations.length - 1].coordinates;
+    this.map.getSource('resultant-vector').setData({
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [first.lng, first.lat],
+          [last.lng, last.lat],
+        ],
+      },
+    });
+  } else if (this.map.getSource('resultant-vector')) {
+    // Clear resultant vector if not enough points
+    this.map.getSource('resultant-vector').setData({
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [],
+      },
+    });
+  }
+},
     calculateTotalDistance() {
-      this.totalDistance = 0;
-      for (let i = 0; i < this.selectedLocations.length - 1; i++) {
-        const a = this.selectedLocations[i].coordinates;
-        const b = this.selectedLocations[i + 1].coordinates;
-        this.totalDistance += haversineDistance(a.lat, a.lng, b.lat, b.lng);
-      }
-    },
+  this.totalDistance = 0;
+  this.resultantVector = 0;
+  this.vectorAngles = [];
+
+  let sumX = 0;
+  let sumY = 0;
+
+  for (let i = 0; i < this.selectedLocations.length - 1; i++) {
+    const a = this.selectedLocations[i].coordinates;
+    const b = this.selectedLocations[i + 1].coordinates;
+
+    // Calculate distance (haversine)
+    const dist = haversineDistance(a.lat, a.lng, b.lat, b.lng);
+    this.totalDistance += dist;
+
+    // Calculate vector components (approximate, assuming small distances)
+    const dx = (b.lng - a.lng) * Math.cos(((a.lat + b.lat) / 2) * Math.PI / 180) * 111.32; // km per degree longitude
+    const dy = (b.lat - a.lat) * 110.574; // km per degree latitude
+
+    sumX += dx;
+    sumY += dy;
+
+    // Calculate angle in degrees (relative to east, counterclockwise)
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    this.vectorAngles.push(angle);
+  }
+
+  // Resultant vector magnitude
+  this.resultantVector = Math.sqrt(sumX * sumX + sumY * sumY);
+},
 
     showMessage(msg) {
       console.warn('Message:', msg);
+    },
+
+    showRequiredSpeed() {
+      if (this.totalDistance > 0 && this.arrivalMinutes > 0) {
+        const speed = this.totalDistance / (this.arrivalMinutes / 60);
+        this.requiredSpeed = speed;
+        this.showSpeedModal = true;
+      } else {
+        this.showMessage('Please ensure total distance and arrival time are set.');
+      }
     },
   },
 };
 </script>
 
 <style scoped>
-#map {
-  width: 100%;
-  height: 100%;
-  border-radius: 20px;
-  overflow: hidden;
-}
 
 </style>
